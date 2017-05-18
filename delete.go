@@ -67,15 +67,11 @@ func delete(containerID string, force bool) error {
 		return err
 	}
 
-	if force == false {
-		running, err := processRunning(status.PID)
-		if err != nil {
-			return err
-		}
+	containerID = status.ID
 
-		if running == true {
-			return fmt.Errorf("Container still running, should be stopped")
-		}
+	containerType, err := oci.GetContainerType(status.Annotations)
+	if err != nil {
+		return err
 	}
 
 	// Retrieve OCI spec configuration.
@@ -84,7 +80,43 @@ func delete(containerID string, force bool) error {
 		return err
 	}
 
-	if _, err = vc.StopPod(podID); err != nil {
+	switch containerType {
+	case vc.PodSandbox:
+		if force == false && status.ID != podID {
+			running, err := processRunning(status.PID)
+			if err != nil {
+				return err
+			}
+
+			if running == true {
+				return fmt.Errorf("Container still running, should be stopped")
+			}
+		}
+
+		if err := deletePod(podID); err != nil {
+			return err
+		}
+	case vc.PodContainer:
+		if err := deleteContainer(podID, containerID); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("Invalid container type found")
+	}
+
+	// In order to prevent any file descriptor leak related to cgroups files
+	// that have been previously created, we have to remove them before this
+	// function returns.
+	cgroupsPathList, err := processCgroupsPath(ociSpec, containerType.IsPod())
+	if err != nil {
+		return err
+	}
+
+	return removeCgroupsPath(cgroupsPathList)
+}
+
+func deletePod(podID string) error {
+	if _, err := vc.StopPod(podID); err != nil {
 		return err
 	}
 
@@ -92,15 +124,15 @@ func delete(containerID string, force bool) error {
 		return err
 	}
 
-	// In order to prevent any file descriptor leak related to cgroups files
-	// that have been previously created, we have to remove them before this
-	// function returns.
-	cgroupsPathList, err := processCgroupsPath(ociSpec, true)
-	if err != nil {
+	return nil
+}
+
+func deleteContainer(podID, containerID string) error {
+	if _, err := vc.StopContainer(podID, containerID); err != nil {
 		return err
 	}
 
-	if err := removeCgroupsPath(cgroupsPathList); err != nil {
+	if _, err := vc.DeleteContainer(podID, containerID); err != nil {
 		return err
 	}
 
