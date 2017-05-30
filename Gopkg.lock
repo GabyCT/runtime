@@ -1,4 +1,4 @@
-memo = "7de58db4b53e29a707f40bf506bca47ff10050e84c2fc0cfd86ba94a0b3903d6"
+memo = "70eee90185844279a61a7a14eed7124066e7af4104ebccde136de3dbd172586e"
 
 [[projects]]
   branch = "master"
@@ -36,10 +36,9 @@ memo = "7de58db4b53e29a707f40bf506bca47ff10050e84c2fc0cfd86ba94a0b3903d6"
   revision = "0ebcfe7ea32d5516c88c4bdc3db7cf0b30c98c7e"
 
 [[projects]]
-  branch = "master"
   name = "github.com/containers/virtcontainers"
   packages = [".","pkg/cni","pkg/hyperstart","pkg/oci"]
-  revision = "d23b31719e42001bd91c1aa9a8f133e3974136fc"
+  revision = "13f8a29844ae916e3da6ba66a22df4f5ee01826c"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
